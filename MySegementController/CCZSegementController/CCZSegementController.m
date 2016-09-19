@@ -35,7 +35,6 @@ typedef void(^indexBlock)(NSInteger index);
         _titles = titles;
         _size = frame.size;
         self.view.frame = frame;
-        _widthArr = [NSMutableArray array];
         [self segementBasicSetting];
         [self segementPageSetting];
         [self containerViewSetting];
@@ -49,6 +48,7 @@ typedef void(^indexBlock)(NSInteger index);
 
 - (void)segementBasicSetting {
     self.view.backgroundColor = [UIColor clearColor];
+    _widthArr = [NSMutableArray array];
     _segementHeight = 44.;
     _minItemSpace = 20.;
     _segementTintColor = [UIColor blackColor];
@@ -56,7 +56,7 @@ typedef void(^indexBlock)(NSInteger index);
     _font = [UIFont systemFontOfSize:16];
     _buttonSpace = [self calculateSpace];
     _indicateHeight = 3.;
-    _duration = .4;
+    _duration = .3;
 }
 
 - (void)segementPageSetting {
@@ -72,7 +72,7 @@ typedef void(^indexBlock)(NSInteger index);
     CGFloat item_x = 0;
     for (int i = 0; i < _titles.count; i++) {
         NSString *title = _titles[i];
-        CGSize titleSize = [title sizeWithAttributes:@{NSFontAttributeName : _font}];
+        CGSize titleSize = [title sizeWithAttributes:@{NSFontAttributeName: _font}];
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         button.frame = CGRectMake(item_x, 0, _buttonSpace * 2 + titleSize.width, _segementHeight);
         [button setTag:i];
@@ -105,6 +105,7 @@ typedef void(^indexBlock)(NSInteger index);
     _containerView.showsHorizontalScrollIndicator = NO;
     _containerView.delegate = self;
     _containerView.pagingEnabled = YES;
+    _containerView.bounces = NO;
     [self.view addSubview:_containerView];
 }
 
@@ -155,7 +156,7 @@ typedef void(^indexBlock)(NSInteger index);
 - (void)scrollIndicateView {
     NSInteger index = [self selectedAtIndex];
     CGSize titleSize = [_selectedButton.titleLabel.text sizeWithAttributes:@{NSFontAttributeName : _font}];
-    [UIView animateWithDuration:_duration delay:.04 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+    [UIView animateWithDuration:_duration delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         if (_style == CCZSegementStyleDefault) {
             _indicateView.frame = CGRectMake(CGRectGetMinX(_selectedButton.frame) + _buttonSpace, CGRectGetMinY(_indicateView.frame), titleSize.width, _indicateHeight);
         } else {
@@ -200,6 +201,9 @@ typedef void(^indexBlock)(NSInteger index);
 }
 
 - (CGFloat)widthAtIndex:(NSInteger)index {
+    if (index < 0 || index > _titles.count - 1) {
+        return .0;
+    }
     return [[_widthArr objectAtIndex:index] doubleValue];
 }
 
@@ -208,6 +212,35 @@ typedef void(^indexBlock)(NSInteger index);
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     NSInteger index = round(scrollView.contentOffset.x / _size.width);
     [self setSelectedItemAtIndex:index];
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    CGFloat offsetX = scrollView.contentOffset.x;
+    
+    NSInteger currentIndex = [self selectedAtIndex];
+    
+    // 当当前的偏移量大于被选中index的偏移量的时候，就是在右侧
+    CGFloat offset; // 在同一侧的偏移量
+    NSInteger buttonIndex = currentIndex;
+    if (offsetX >= [self selectedAtIndex] * _size.width) {
+        offset = offsetX - [self selectedAtIndex] * _size.width;
+        buttonIndex += 1;
+    } else {
+        offset = [self selectedAtIndex] * _size.width - offsetX;
+        buttonIndex -= 1;
+        currentIndex -= 1;
+    }
+    
+    CGFloat originMovedX = _style == CCZSegementStyleDefault? (CGRectGetMinX(_selectedButton.frame) + _buttonSpace) : CGRectGetMinX(_selectedButton.frame);
+    CGFloat targetMovedWidth = [self widthAtIndex:currentIndex];//需要移动的距离
+    
+    CGFloat targetButtonWidth = _style == CCZSegementStyleDefault? ([self widthAtIndex:buttonIndex] - 2 * _buttonSpace) : [self widthAtIndex:buttonIndex]; // 这个会影响width
+    CGFloat originButtonWidth = _style == CCZSegementStyleDefault? ([self widthAtIndex:[self selectedAtIndex]] - 2 * _buttonSpace) : [self widthAtIndex:[self selectedAtIndex]];
+    
+    
+    CGFloat moved; // 移动的距离
+    moved = offsetX - [self selectedAtIndex] * _size.width;
+    _indicateView.frame = CGRectMake(originMovedX + targetMovedWidth / _size.width * moved, _indicateView.frame.origin.y,  originButtonWidth + (targetButtonWidth - originButtonWidth) / _size.width * offset, _indicateView.frame.size.height);
 }
 
 #pragma mark -- set
@@ -244,7 +277,7 @@ typedef void(^indexBlock)(NSInteger index);
     if (style == CCZSegementStyleDefault) {
         
     } else {
-        _indicateView.frame = CGRectMake(0, _segementHeight - _indicateHeight, [self widthAtIndex:0], _indicateHeight);
+        _indicateView.frame = CGRectMake(_selectedButton.frame.origin.x, _segementHeight - _indicateHeight, [self widthAtIndex:0], _indicateHeight);
     }
 }
 
