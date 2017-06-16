@@ -1,8 +1,9 @@
 # CCZSegementController
 ---
 
-#### 写在前面：这个为弃用的版本，请去这个链接下载最新代码，有问题会持续更新->[最新修正版CCZSegmentController](https://github.com/CranzCapatain/CCZSegmentController/tree/master)
+# 写在前面：这个为弃用的版本，请去这个链接下载最新代码，有问题会持续更新->[最新修正版CCZSegmentController](https://github.com/CranzCapatain/CCZSegmentController/tree/master)
 
+---------
 
 * 使用方法
 ```Objective-C
